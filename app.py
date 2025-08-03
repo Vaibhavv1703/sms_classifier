@@ -1,22 +1,48 @@
-import gradio as gr
+from flask import Flask, request, jsonify, render_template
+import re
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+from nltk.stem import SnowballStemmer
+import numpy as np
 import joblib
 
-# Load model and vectorizer
-model = joblib.load("model.pkl")
-vectorizer = joblib.load("vectorizer.pkl")
+model=joblib.load('model.pkl')
+vectorizer=joblib.load('vectorizer.pkl')
 
-def classify_sms(message):
-    vect_msg = vectorizer.transform([message])
-    prediction = model.predict(vect_msg)[0]
-    return "Spam" if prediction == 1 else "Not Spam"
+def preprocess_text(text):
+    text = text.lower()
+    text = re.sub(r'[^a-zA-Z\s]', '', text)
+    text = ' '.join([word for word in text.split() if word not in ENGLISH_STOP_WORDS])
+    stemmer = SnowballStemmer("english")
+    
+    # Apply stemming
+    text = ' '.join([stemmer.stem(word) for word in text.split()])
+    return text
 
-# Gradio UI
-interface = gr.Interface(
-    fn=classify_sms,
-    inputs=gr.Textbox(label="Enter SMS Message"),
-    outputs=gr.Label(label="Prediction"),
-    title="SMS Spam Classifier",
-    description="Enter a message to check if it's spam or not."
-)
+app = Flask(__name__)
 
-interface.launch()
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    # Get text from form data
+    text = request.form.get('text', '')
+    
+    if not text:
+        return render_template('index.html', prediction_text='Please enter some text to classify')
+    
+    # Preprocess the text
+    processed_text = preprocess_text(text)
+    text_tfidf = vectorizer.transform([processed_text])
+
+    # Make prediction
+    prediction = model.predict(text_tfidf)
+    
+    # Get prediction result
+    output = 'Spam' if prediction[0] == 1 else 'Ham'
+
+    return render_template('index.html', prediction_text='Prediction: {}'.format(output))
+
+if __name__ == "__main__":
+    app.run(debug=True)

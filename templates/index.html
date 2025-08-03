@@ -2,16 +2,20 @@
 <html>
 <head>
     <title>SMS Spam Classifier</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h2>Enter your SMS text below:</h2>
-    <form method="post" action="/predict">
-        <textarea name="sms" rows="5" cols="60" placeholder="Type your message here...">{{ sms_text if sms_text else '' }}</textarea><br><br>
-        <button type="submit">Classify</button>
-    </form>
-
-    {% if prediction %}
-    <h3>Prediction: <strong>{{ prediction }}</strong></h3>
-    {% endif %}
+    <div class="form-container">
+        <h2>SMS Spam Classifier</h2>
+        <p>Enter an SMS text message to classify it as Spam or Ham</p>
+        <form action="/predict" method="post">
+            <textarea name="text" rows="4" cols="50" placeholder="Type your SMS message here..." required></textarea>
+            <br>
+            <input type="submit" value="Classify Message">
+        </form>
+        {% if prediction_text %}
+        <div class="result">{{ prediction_text }}</div>
+        {% endif %}
+    </div>
 </body>
 </html>
